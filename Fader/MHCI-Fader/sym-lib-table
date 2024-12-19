@@ -1,0 +1,4 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "FaderLibrary")(type "KiCad")(uri "${KIPRJMOD}/FaderLibrary.kicad_sym")(options "")(descr ""))
+)
