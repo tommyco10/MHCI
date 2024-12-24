@@ -75,7 +75,7 @@
 			(type solid)
 		)
 		(fill none)
-		(layer "Margin")
+		(layer "F.CrtYd")
 		(uuid "621f0cc4-5ed1-4725-b693-d5e113799b01")
 	)
 	(fp_text user "${REFERENCE}"
@@ -258,7 +258,7 @@
 		)
 		(polygon
 			(pts
-				(xy 6.35 8.89) (xy 3.81 8.89) (xy 3.81 -3.81) (xy 6.35 -3.81)
+				(xy 6.35 8.382) (xy 3.81 8.382) (xy 3.81 -3.556) (xy 6.35 -3.556)
 			)
 		)
 	)
