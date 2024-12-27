@@ -2739,6 +2739,7 @@
 		(property "Reference" "J1"
 			(at 0 -2.33 360)
 			(layer "F.SilkS")
+			(hide yes)
 			(uuid "0488c5f9-9e8d-4b31-a1ae-7a244e685e50")
 			(effects
 				(font
@@ -3919,6 +3920,7 @@
 		(property "Reference" "J2"
 			(at 0 -2.33 90)
 			(layer "F.SilkS")
+			(hide yes)
 			(uuid "b32e9a72-93b9-44ed-b78c-a436ddc5f892")
 			(effects
 				(font
@@ -7584,6 +7586,210 @@
 		(layer "Edge.Cuts")
 		(uuid "f86536e3-60cc-49f6-a3cb-acbe44b6c9ca")
 	)
+	(gr_text "5V"
+		(at 102.7 107.7 90)
+		(layer "F.SilkS")
+		(uuid "05beb942-da4a-4329-8c0d-80609c251e90")
+		(effects
+			(font
+				(size 0.66 0.66)
+				(thickness 0.1)
+			)
+			(justify bottom)
+		)
+	)
+	(gr_text "5V"
+		(at 74.8 98 90)
+		(layer "F.SilkS")
+		(uuid "15a41185-51f8-46ea-8e02-89e6baf32aef")
+		(effects
+			(font
+				(size 0.66 0.66)
+				(thickness 0.1)
+			)
+			(justify top)
+		)
+	)
+	(gr_text "TERM"
+		(at 93 104.9 90)
+		(layer "F.SilkS")
+		(uuid "2bf80997-baae-49a9-8401-9b404a75517a")
+		(effects
+			(font
+				(size 0.66 0.66)
+				(thickness 0.1)
+			)
+			(justify top)
+		)
+	)
+	(gr_text "GND"
+		(at 74.8 95.5 90)
+		(layer "F.SilkS")
+		(uuid "2dbeaf17-b608-4241-b310-68eed75b977c")
+		(effects
+			(font
+				(size 0.66 0.66)
+				(thickness 0.1)
+			)
+			(justify top)
+		)
+	)
+	(gr_text "5V ISO"
+		(at 100.6 104.8 90)
+		(layer "F.SilkS")
+		(uuid "3ef1d304-8f47-4a01-86a0-a84259746b9b")
+		(effects
+			(font
+				(size 0.66 0.66)
+				(thickness 0.1)
+			)
+			(justify bottom)
+		)
+	)
+	(gr_text "RX"
+		(at 90.1 95.9 90)
+		(layer "F.SilkS")
+		(uuid "4daf4028-1bef-4e12-9fa1-c53533802737")
+		(effects
+			(font
+				(size 0.66 0.66)
+				(thickness 0.1)
+			)
+			(justify right)
+		)
+	)
+	(gr_text "SDA"
+		(at 74.8 100.6 90)
+		(layer "F.SilkS")
+		(uuid "4f4fc8ed-3f74-4c1d-bb01-6679c5aaef61")
+		(effects
+			(font
+				(size 0.66 0.66)
+				(thickness 0.1)
+			)
+			(justify top)
+		)
+	)
+	(gr_text "3V3"
+		(at 77.3 97.6 0)
+		(layer "F.SilkS")
+		(uuid "5834e76e-86f8-4f11-98a4-4c5fb5b67413")
+		(effects
+			(font
+				(size 0.66 0.66)
+				(thickness 0.1)
+			)
+			(justify bottom)
+		)
+	)
+	(gr_text "TX"
+		(at 92.7 95.9 90)
+		(layer "F.SilkS")
+		(uuid "59fe51e2-f2f4-40de-9d9b-df124c7b3eaa")
+		(effects
+			(font
+				(size 0.66 0.66)
+				(thickness 0.1)
+			)
+			(justify right)
+		)
+	)
+	(gr_text "5V"
+		(at 80.2 107.2 0)
+		(layer "F.SilkS")
+		(uuid "5ab17e6d-675d-457f-aebc-5b0a477352e5")
+		(effects
+			(font
+				(size 0.66 0.66)
+				(thickness 0.1)
+			)
+			(justify bottom)
+		)
+	)
+	(gr_text "L"
+		(at 74.8 105.6 90)
+		(layer "F.SilkS")
+		(uuid "6772d96e-bc6a-40d5-9791-dae22b687d1d")
+		(effects
+			(font
+				(size 0.66 0.66)
+				(thickness 0.1)
+			)
+			(justify top)
+		)
+	)
+	(gr_text "GND"
+		(at 87.5 95.9 90)
+		(layer "F.SilkS")
+		(uuid "6afcb18d-0c98-4a5e-ade9-d4d2414c429b")
+		(effects
+			(font
+				(size 0.66 0.66)
+				(thickness 0.1)
+			)
+			(justify right)
+		)
+	)
+	(gr_text "ESP32-S3\nZero/Tiny"
+		(at 114.5 102 90)
+		(layer "F.SilkS")
+		(uuid "8f586911-d502-4334-8f83-789997751d81")
+		(effects
+			(font
+				(size 1.5 1.5)
+				(thickness 0.2)
+			)
+			(justify bottom)
+		)
+	)
+	(gr_text "VIN"
+		(at 80.2 98.3 0)
+		(layer "F.SilkS")
+		(uuid "9d7f1383-5014-47af-b3d4-e35da2a1f0fc")
+		(effects
+			(font
+				(size 0.66 0.66)
+				(thickness 0.1)
+			)
+			(justify bottom)
+		)
+	)
+	(gr_text "SCL"
+		(at 74.8 103.1 90)
+		(layer "F.SilkS")
+		(uuid "a992335a-f3da-4451-8eee-eb75aa7a2a3a")
+		(effects
+			(font
+				(size 0.66 0.66)
+				(thickness 0.1)
+			)
+			(justify top)
+		)
+	)
+	(gr_text "CAN"
+		(at 76.4 106.8 90)
+		(layer "F.SilkS")
+		(uuid "c81158b5-caeb-4bef-becd-819adc7b3a41")
+		(effects
+			(font
+				(size 0.66 0.66)
+				(thickness 0.1)
+			)
+			(justify bottom)
+		)
+	)
+	(gr_text "H"
+		(at 74.8 108.2 90)
+		(layer "F.SilkS")
+		(uuid "df67251c-17aa-4355-9314-db0d4aa5696f")
+		(effects
+			(font
+				(size 0.66 0.66)
+				(thickness 0.1)
+			)
+			(justify top)
+		)
+	)
 	(segment
 		(start 160.1175 104.73)
 		(end 165.5 104.73)
@@ -8193,15 +8399,6 @@
 		(free yes)
 		(net 2)
 		(uuid "4451b530-ef20-4faf-96fc-82c859750f2a")
-	)
-	(via
-		(at 88 96)
-		(size 0.9)
-		(drill 0.4)
-		(layers "F.Cu" "B.Cu")
-		(free yes)
-		(net 2)
-		(uuid "45ed1b30-616b-4c76-a922-3c5a8b02cb10")
 	)
 	(via
 		(at 131 101)
