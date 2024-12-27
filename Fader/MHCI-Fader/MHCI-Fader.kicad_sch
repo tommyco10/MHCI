@@ -5629,6 +5629,28 @@
 			)
 		)
 	)
+	(global_label "BUTTON_LED"
+		(shape input)
+		(at 175.26 60.96 0)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "5e13b643-0b44-4ae0-a22c-df057c67bfcb")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 189.8566 60.96 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+	)
 	(global_label "CAN_S"
 		(shape input)
 		(at 209.55 120.65 180)
@@ -5763,7 +5785,7 @@
 	)
 	(global_label "POT_LED"
 		(shape input)
-		(at 175.26 60.96 0)
+		(at 175.26 58.42 0)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -5771,9 +5793,9 @@
 			)
 			(justify left)
 		)
-		(uuid "7deceefa-4843-4ba3-bb53-9e8a8a30f947")
+		(uuid "8470758a-a6a5-4c18-9961-bcb442c13b88")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 186.228 60.96 0)
+			(at 186.228 58.42 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5955,28 +5977,6 @@
 					(size 1.27 1.27)
 				)
 				(justify right)
-				(hide yes)
-			)
-		)
-	)
-	(global_label "BUTTON_LED"
-		(shape input)
-		(at 175.26 58.42 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "db974758-6ae5-45c8-af82-cf85a2897bc6")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 189.8566 58.42 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
 				(hide yes)
 			)
 		)
