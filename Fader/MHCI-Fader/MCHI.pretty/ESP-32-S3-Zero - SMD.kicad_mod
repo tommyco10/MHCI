@@ -262,9 +262,9 @@
 			)
 		)
 	)
-	(model "${KIPRJMOD}/ESP32-S3-Zero V2.step"
+	(model "C:/dev/MHCI/common/3D/ESP32-S3-Zero V2.step"
 		(offset
-			(xyz -9 -11.75 1.6)
+			(xyz -9 -11.75 0.9)
 		)
 		(scale
 			(xyz 1 1 1)

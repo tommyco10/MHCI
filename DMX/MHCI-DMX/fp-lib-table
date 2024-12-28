@@ -1,0 +1,4 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "LandingLight")(type "KiCad")(uri "C:/dev/About-Time/Stage-Landing-Lights/hardware/pcb/Landing-Light/Landing-Light.pretty")(options "")(descr ""))
+)

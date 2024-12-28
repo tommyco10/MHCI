@@ -240,7 +240,7 @@
 		(solder_mask_margin 0.102)
 		(uuid "d6f83417-8c90-4e7f-b550-8b06191cbdbc")
 	)
-	(model "${KIPRJMOD}/TBA1-0510.step"
+	(model "C:/dev/MHCI/common/3D/TBA1-0510.step"
 		(offset
 			(xyz -40.5 -32.5 -10.7)
 		)
