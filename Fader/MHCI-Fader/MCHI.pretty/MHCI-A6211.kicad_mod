@@ -66,123 +66,6 @@
 			)
 		)
 	)
-	(property "MFR" "RL1632R-R082-F"
-		(at 32 13.5 0)
-		(unlocked yes)
-		(layer "F.Fab")
-		(hide yes)
-		(uuid "5779da31-da76-4160-8d04-662a7d29d299")
-		(effects
-			(font
-				(size 1 1)
-				(thickness 0.15)
-			)
-		)
-	)
-	(property "MFR" "RL1632R-R150-F"
-		(at 32 13.5 0)
-		(unlocked yes)
-		(layer "F.Fab")
-		(hide yes)
-		(uuid "385851b5-230b-466d-ac38-48c21aeff538")
-		(effects
-			(font
-				(size 1 1)
-				(thickness 0.15)
-			)
-		)
-	)
-	(property "MFR" "RL1632R-R075-F"
-		(at 32 13.5 0)
-		(unlocked yes)
-		(layer "F.Fab")
-		(hide yes)
-		(uuid "adb9fd5c-9ed9-43ef-8de9-7491dd3e7b25")
-		(effects
-			(font
-				(size 1 1)
-				(thickness 0.15)
-			)
-		)
-	)
-	(property "MFR" "2060-452/998-404"
-		(at 32 13.5 0)
-		(unlocked yes)
-		(layer "F.Fab")
-		(hide yes)
-		(uuid "f1ac3c4f-c0e2-4200-a317-ff8b6786646d")
-		(effects
-			(font
-				(size 1 1)
-				(thickness 0.15)
-			)
-		)
-	)
-	(property "MFR" "RL1632R-R220-F"
-		(at 32 13.5 0)
-		(unlocked yes)
-		(layer "F.Fab")
-		(hide yes)
-		(uuid "9ee48277-534b-41b7-8751-d0b02a80413b")
-		(effects
-			(font
-				(size 1 1)
-				(thickness 0.15)
-			)
-		)
-	)
-	(property "MFR" "2060-452/998-404"
-		(at 32 13.5 0)
-		(unlocked yes)
-		(layer "F.Fab")
-		(hide yes)
-		(uuid "9d87d6f7-e8a5-4ed7-b7af-c4245e2c14c3")
-		(effects
-			(font
-				(size 1 1)
-				(thickness 0.15)
-			)
-		)
-	)
-	(property "MFR" "B82464G4103M"
-		(at 32 13.5 0)
-		(unlocked yes)
-		(layer "F.Fab")
-		(hide yes)
-		(uuid "328731c9-3292-48cf-9ec4-9bf669fb1a76")
-		(effects
-			(font
-				(size 1 1)
-				(thickness 0.15)
-			)
-		)
-	)
-	(property "MFR" " B560C-13-F"
-		(at 32 13.5 0)
-		(unlocked yes)
-		(layer "F.Fab")
-		(hide yes)
-		(uuid "94614b85-f9a5-49d2-b4f9-641083c659d0")
-		(effects
-			(font
-				(size 1 1)
-				(thickness 0.15)
-			)
-		)
-	)
-	(property "MFR" "GXC1J470MCQ1GS"
-		(at 32 13.5 0)
-		(unlocked yes)
-		(layer "F.Fab")
-		(hide yes)
-		(uuid "83a960f2-f485-4ca3-9323-4b17d76ca8eb")
-		(effects
-			(font
-				(size 1 1)
-				(thickness 0.15)
-			)
-		)
-	)
 	(property "MFR" "A6211GLJTR-T"
 		(at 32 13.5 0)
 		(unlocked yes)
@@ -698,5 +581,16 @@
 		(layers "*.Cu" "*.Mask")
 		(remove_unused_layers no)
 		(uuid "b260a344-c5d5-4eab-80fa-6afa1acfaada")
+	)
+	(model "C:/dev/MHCI/common/3D/a6211.step"
+		(offset
+			(xyz 1 0 8.5)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
 	)
 )
