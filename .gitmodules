@@ -1,0 +1,3 @@
+[submodule "DMX/src/MHCI-DMX/components/esp_dmx"]
+	path = DMX/src/MHCI-DMX/components/esp_dmx
+	url = https://github.com/someweisguy/esp_dmx
