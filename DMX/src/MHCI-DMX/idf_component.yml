@@ -1,0 +1,6 @@
+
+dependencies:
+  espressif/led_strip: "^3.0.0"
+
+targets:
+  - esp32s3

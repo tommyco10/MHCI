@@ -1,44 +1,14 @@
-menu "Example Configuration"
+menu "MHCI Configuration"
 
     orsource "$IDF_PATH/examples/common_components/env_caps/$IDF_TARGET/Kconfig.env_caps"
 
-    choice BLINK_LED
-        prompt "Blink LED type"
-        default BLINK_LED_GPIO if IDF_TARGET_ESP32 || IDF_TARGET_ESP32C2
-        default BLINK_LED_STRIP
-        help
-            Select the LED type. A normal level controlled LED or an addressable LED strip.
-            The default selection is based on the Espressif DevKit boards.
-            You can change the default selection according to your board.
-
-        config BLINK_LED_GPIO
-            bool "GPIO"
-        config BLINK_LED_STRIP
-            bool "LED strip"
-    endchoice
-
-    choice BLINK_LED_STRIP_BACKEND
-        depends on BLINK_LED_STRIP
-        prompt "LED strip backend peripheral"
-        default BLINK_LED_STRIP_BACKEND_RMT if SOC_RMT_SUPPORTED
-        default BLINK_LED_STRIP_BACKEND_SPI
-        help
-            Select the backend peripheral to drive the LED strip.
-
-        config BLINK_LED_STRIP_BACKEND_RMT
-            depends on SOC_RMT_SUPPORTED
-            bool "RMT"
-        config BLINK_LED_STRIP_BACKEND_SPI
-            bool "SPI"
-    endchoice
-
-    config BLINK_GPIO
-        int "Blink GPIO number"
+    config PIXEL_GPIO
+        int "LED Pixel GPIO number"
         range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
         default 5 if IDF_TARGET_ESP32
         default 18 if IDF_TARGET_ESP32S2
-        default 48 if IDF_TARGET_ESP32S3
-        default 8
+        default 38 if IDF_TARGET_ESP32S3
+        default 38
         help
             GPIO number (IOxx) to blink on and off the LED.
             Some GPIOs are used for other purposes (flash connections, etc.) and cannot be used to blink.
@@ -49,5 +19,74 @@ menu "Example Configuration"
         default 1000
         help
             Define the blinking period in milliseconds.
+
+    config DEBUG
+        bool "Debug mode enabled"
+        default true
+        help
+            Option to enable debug and logging mode.
+
+    config DMX_RX_GPIO
+        int "DMX Receive GPIO number"
+        range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+        default 17
+        help
+            GPIO number (IOxx) used to receive DMX data.
+
+    config DMX_TX_GPIO
+        int "DMX Transmit GPIO number"
+        range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+        default 14
+        help
+            GPIO number (IOxx) used to transmit DMX data.
+
+    config DMX_RTS_GPIO
+        int "DMX RTS GPIO number"
+        range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+        default 16
+        help
+            GPIO number (IOxx) used to "request to send" DMX data.
+
+    config PWM_01_GPIO
+        int "PWM 01 GPIO number"
+        range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+        default 11
+        help
+            GPIO number (IOxx) used for PWM 01.
+    
+    config PWM_02_GPIO
+        int "PWM 02 GPIO number"
+        range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+        default 10
+        help
+            GPIO number (IOxx) used for PWM 02.
+
+    config PWM_03_GPIO
+        int "PWM 03 GPIO number"
+        range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+        default 9
+        help
+            GPIO number (IOxx) used for PWM 03.
+    
+    config PWM_04_GPIO
+        int "PWM 04 GPIO number"
+        range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+        default 8
+        help
+            GPIO number (IOxx) used for PWM 04.
+
+    config PWM_05_GPIO
+        int "PWM 05 GPIO number"
+        range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+        default 7
+        help
+            GPIO number (IOxx) used for PWM 05.
+    
+    config PWM_06_GPIO
+        int "PWM 06 GPIO number"
+        range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+        default 6
+        help
+            GPIO number (IOxx) used for PWM 06.
 
 endmenu
