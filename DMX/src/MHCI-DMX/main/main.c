@@ -18,6 +18,12 @@ static const char *TAG = "example";
    or you can edit the following line and set a number here.
 */
 
+#define LEDC_TIMER              LEDC_TIMER_0
+#define LEDC_MODE               LEDC_LOW_SPEED_MODE
+#define LEDC_DUTY_RES           LEDC_TIMER_13_BIT // Set duty resolution to 13 bits
+#define LEDC_DUTY               (4096) // Set duty to 50%. (2 ** 13) * 50% = 4096
+#define LEDC_FREQUENCY          (1000) // Frequency in Hertz. Set frequency at 4 kHz
+
 #define BLINK_GPIO 38
 
 static uint8_t s_led_state = 0;
@@ -25,7 +31,7 @@ static uint8_t s_led_state = 0;
 static led_strip_handle_t led_strip;
 
 // PWM Configuration
-const uint8_t pwmChannels[6] = {1, 2, 3, 4, 5, 6};
+const uint8_t pwmChannels[6] = {LEDC_CHANNEL_0, LEDC_CHANNEL_1, LEDC_CHANNEL_2, LEDC_CHANNEL_3, LEDC_CHANNEL_4, LEDC_CHANNEL_5};
 const uint8_t pwmResolution = 16; // PWM resolution of 16 bits
 const uint16_t pwmThreshold = 0;  // Low Value Threshold for PWM output
 
@@ -60,14 +66,14 @@ uint16_t pwmFreq;
 const float midpointBrightness1 = 8441.0f; // PWM output at DMX value x0_1 (midpoint brightness)
 const float x0_1 = 32768.0f;               // Midpoint of the DMX input range (65535 / 2)
 const float k1_1 = 0.0002f;                // Steepness for the lower S-curve
-const float s0_1 = 1.0f / (1.0f + expf(k1_1 * x0_1)); // Sigmoid at input = 0
+const float s0_1 = 6.0f;///1.0f / (1.0f + expf(k1_1 * x0_1)); // Sigmoid at input = 0
 const float s1_1 = 0.5f;                                // Sigmoid at input = x0
 
 // S-curve Parameters for Channel 2
 const float midpointBrightness2 = 8441.0f; // PWM output at DMX value x0_2 (midpoint brightness)
 const float x0_2 = 32768.0f;               // Midpoint of the DMX input range (65535 / 2)
 const float k1_2 = 0.0002f;                // Steepness for the lower S-curve
-const float s0_2 = 1.0f / (1.0f + expf(k1_2 * x0_2)); // Sigmoid at input = 0
+const float s0_2 = 6.0f;//1.0f / (1.0f + expf(k1_2 * x0_2)); // Sigmoid at input = 0
 const float s1_2 = 0.5f;                                // Sigmoid at input = x0
 
 // Function to map DMX value to PWM value using an S-curve (sigmoid function)
@@ -154,26 +160,55 @@ void configure_dmx() {
 
 void configure_pwm() {
     // Set PWM frequency based on initial personality
-    pwmFreq = getPWMFrequencyForPersonality(currentPersonality);
+    //pwmFreq = getPWMFrequencyForPersonality(currentPersonality);
+
+
 
     // Set up the PWM channels for both LEDs
-    ledcSetup(pwmChannels[0], pwmFreq, pwmResolution);
-    ledcAttachPin(outputPins[0], pwmChannels[0]);
-    ledcAttachPin(builtInLedPin, pwmChannels[0]);
+    //ledcSetup(pwmChannels[0], pwmFreq, pwmResolution);
+    //ledcAttachPin(outputPins[0], pwmChannels[0]);
+    //ledcAttachPin(builtInLedPin, pwmChannels[0]);
 
-    ledcSetup(pwmChannels[1], pwmFreq, pwmResolution);
-    ledcAttachPin(outputPins[1], pwmChannels[1]);
+    //ledcSetup(pwmChannels[1], pwmFreq, pwmResolution);
+    //ledcAttachPin(outputPins[1], pwmChannels[1]);
+
+
+        // Prepare and then apply the LEDC PWM timer configuration
+    ledc_timer_config_t ledc_timer = {
+        .speed_mode       = LEDC_MODE,
+        .duty_resolution  = LEDC_DUTY_RES,
+        .timer_num        = LEDC_TIMER,
+        .freq_hz          = LEDC_FREQUENCY,  // Set output frequency at 4 kHz
+        .clk_cfg          = LEDC_AUTO_CLK
+    };
+    ESP_ERROR_CHECK(ledc_timer_config(&ledc_timer));
+
+    // Prepare and then apply the LEDC PWM channel configuration
+    ledc_channel_config_t ledc_channel = {
+        .speed_mode     = LEDC_MODE,
+        .channel        = LEDC_CHANNEL_0,
+        .timer_sel      = LEDC_TIMER,
+        .intr_type      = LEDC_INTR_DISABLE,
+        .gpio_num       = 11,
+        .duty           = 0, // Set duty to 0%
+        .hpoint         = 0
+    };
+    ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel));
 }
 
 void setup() {
     /* Configure the peripheral according to the LED type */
     configure_led();
 
+    /* Configure PWM pins */
+    configure_pwm();
+
+    ledc_set_duty(LEDC_MODE, LEDC_CHANNEL_0, 16384);
+    ledc_update_duty(LEDC_MODE, LEDC_CHANNEL_0);
+
     /* Configure DMX peripheral */
     configure_dmx();
 
-    /* Configure PWM pins */
-    configure_pwm();
 
     #if DEBUG
     ESP_LOGI(TAG, "Initial DMX Start Address: %d\n", dmxAddress);
@@ -219,11 +254,11 @@ void loop() {
                     // Get the new PWM frequency based on personality
                     uint16_t newPwmFreq = getPWMFrequencyForPersonality(currentPersonality);
                     pwmFreq = newPwmFreq;
-                    ledcSetup(pwmChannels[0], pwmFreq, pwmResolution);
-                    ledcSetup(pwmChannels[1], pwmFreq, pwmResolution);
+                    //ledcSetup(pwmChannels[0], pwmFreq, pwmResolution);
+                    //ledcSetup(pwmChannels[1], pwmFreq, pwmResolution);
 
                     // Use ledcReadFreq to display the updated PWM frequency
-                    ESP_LOGI(TAG, "PWM frequency set to %d Hz\n", ledcReadFreq(pwmChannels[0]));
+                    //ESP_LOGI(TAG, "PWM frequency set to %d Hz\n", ledcReadFreq(pwmChannels[0]));
                 }
 
                 dmxAddressChanged = false;
@@ -260,15 +295,15 @@ void loop() {
                 }
 
                 // Write to PWM outputs
-                ledcWrite(pwmChannels[0], scaledBrightness1);
-                ledcWrite(pwmChannels[1], scaledBrightness2);
+                //ledcWrite(pwmChannels[0], scaledBrightness1);
+                //ledcWrite(pwmChannels[1], scaledBrightness2);
 
                 unsigned long now = esp_timer_get_time() / 1000;
                 if (now - lastUpdate > 750) {
                     ESP_LOGI(TAG, "Startcode: %d, Address: %d\n", dmxData[0], dmxAddress);
                     ESP_LOGI(TAG, "Personality: %d\n", currentPersonality);
                     // Use ledcReadFreq to display the current PWM frequency
-                    ESP_LOGI(TAG, "PWM Frequency: %d Hz\n", ledcReadFreq(pwmChannels[0]));
+                    //ESP_LOGI(TAG, "PWM Frequency: %d Hz\n", ledcReadFreq(pwmChannels[0]));
                     ESP_LOGI(TAG, "Channel 1 - DMX: %d, PWM: %d\n", rawBrightness1, scaledBrightness1);
                     ESP_LOGI(TAG, "Channel 2 - DMX: %d, PWM: %d\n", rawBrightness2, scaledBrightness2);
                     lastUpdate = now;
