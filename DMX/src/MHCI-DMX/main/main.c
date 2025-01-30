@@ -20,7 +20,7 @@ static const char *TAG = "example";
 
 #define LEDC_TIMER              LEDC_TIMER_0
 #define LEDC_MODE               LEDC_LOW_SPEED_MODE
-#define LEDC_DUTY_RES           LEDC_TIMER_13_BIT // Set duty resolution to 13 bits
+#define LEDC_DUTY_RES           LEDC_TIMER_8_BIT // Set duty resolution to 13 bits
 #define LEDC_DUTY               (4096) // Set duty to 50%. (2 ** 13) * 50% = 4096
 #define LEDC_FREQUENCY          (1000) // Frequency in Hertz. Set frequency at 4 kHz
 
@@ -203,9 +203,6 @@ void setup() {
     /* Configure PWM pins */
     configure_pwm();
 
-    ledc_set_duty(LEDC_MODE, LEDC_CHANNEL_0, 16384);
-    ledc_update_duty(LEDC_MODE, LEDC_CHANNEL_0);
-
     /* Configure DMX peripheral */
     configure_dmx();
 
@@ -268,6 +265,12 @@ void loop() {
 
             int index = dmxAddress;
             if (index + 3 < DMX_PACKET_SIZE) {
+
+                ledc_set_duty(LEDC_MODE, LEDC_CHANNEL_0, dmxData[index]);
+                ledc_update_duty(LEDC_MODE, LEDC_CHANNEL_0);
+
+                /*
+
                 // Read DMX values for Channel 1
                 uint16_t rawBrightness1 = ((uint16_t)dmxData[index] << 8) | dmxData[index + 1];
                 // Read DMX values for Channel 2
@@ -294,6 +297,8 @@ void loop() {
                     scaledBrightness2 = 0;
                 }
 
+                */
+
                 // Write to PWM outputs
                 //ledcWrite(pwmChannels[0], scaledBrightness1);
                 //ledcWrite(pwmChannels[1], scaledBrightness2);
@@ -304,8 +309,8 @@ void loop() {
                     ESP_LOGI(TAG, "Personality: %d\n", currentPersonality);
                     // Use ledcReadFreq to display the current PWM frequency
                     //ESP_LOGI(TAG, "PWM Frequency: %d Hz\n", ledcReadFreq(pwmChannels[0]));
-                    ESP_LOGI(TAG, "Channel 1 - DMX: %d, PWM: %d\n", rawBrightness1, scaledBrightness1);
-                    ESP_LOGI(TAG, "Channel 2 - DMX: %d, PWM: %d\n", rawBrightness2, scaledBrightness2);
+                    //ESP_LOGI(TAG, "Channel 1 - DMX: %d, PWM: %d\n", rawBrightness1, scaledBrightness1);
+                    //ESP_LOGI(TAG, "Channel 2 - DMX: %d, PWM: %d\n", rawBrightness2, scaledBrightness2);
                     lastUpdate = now;
                 }
             } else {
