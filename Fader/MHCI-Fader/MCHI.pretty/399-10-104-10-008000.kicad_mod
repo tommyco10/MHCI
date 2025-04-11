@@ -1,0 +1,232 @@
+(footprint "399-10-104-10-008000"
+	(version 20240108)
+	(generator "pcbnew")
+	(generator_version "8.0")
+	(layer "F.Cu")
+	(descr "399-10-104-10-008000")
+	(tags "Connector")
+	(property "Reference" "J**"
+		(at 0 0 0)
+		(layer "F.SilkS")
+		(uuid "f395a8ce-3632-4a93-a098-e3e673070bb8")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.254)
+			)
+		)
+	)
+	(property "Value" "399-10-104-10-008000"
+		(at 0 0 0)
+		(layer "F.SilkS")
+		(hide yes)
+		(uuid "8dd5f4ea-cd90-4154-abd0-b54b7e900a7b")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.254)
+			)
+		)
+	)
+	(property "Footprint" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "ceeabc24-dba1-4594-a249-23064d5bc7f2")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "a08828ce-eddf-4092-9af5-cfd9ee2f2d1d")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "710e228f-1df9-4861-b6a7-bf6575bfbd90")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(attr through_hole)
+	(fp_line
+		(start -8.89 -5.588)
+		(end -8.89 -1.397)
+		(stroke
+			(width 0.2)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "29a7d47b-1ff8-45cc-a87f-ec9eb330e824")
+	)
+	(fp_line
+		(start 1.27 -5.588)
+		(end -8.89 -5.588)
+		(stroke
+			(width 0.2)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "49d6ba55-c696-4073-ae11-07528b1e4f66")
+	)
+	(fp_line
+		(start 1.27 0)
+		(end 1.27 -5.588)
+		(stroke
+			(width 0.2)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "0bb24e53-6cbf-4bc1-bcb9-f8627286fb97")
+	)
+	(fp_line
+		(start -9.14 -5.838)
+		(end 1.52 -5.838)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "81ffd097-4033-42f5-8639-f5a8b8812406")
+	)
+	(fp_line
+		(start -9.14 1.025)
+		(end -9.14 -5.838)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "31f79910-666a-4a5e-94ea-7288d4c8674a")
+	)
+	(fp_line
+		(start 1.52 -5.838)
+		(end 1.52 1.025)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "ce727397-2670-410c-9afc-7cef88256069")
+	)
+	(fp_line
+		(start 1.52 1.025)
+		(end -9.14 1.025)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "c21e717a-314d-4ea6-821d-f107b6822392")
+	)
+	(fp_line
+		(start -8.89 -5.588)
+		(end 1.27 -5.588)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "f0b4f3be-9a00-4340-a5be-1f92de982bc9")
+	)
+	(fp_line
+		(start -8.89 -1.397)
+		(end -8.89 -5.588)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "51aa41b5-a91f-45a1-9e45-a425d1086edc")
+	)
+	(fp_line
+		(start 1.27 -5.588)
+		(end 1.27 -1.397)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "ca249981-0ae7-4b60-9ce3-0d2f0e2b44bd")
+	)
+	(fp_line
+		(start 1.27 -1.397)
+		(end -8.89 -1.397)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "0b9cee00-49c1-4505-a96d-eb5af7df4d59")
+	)
+	(fp_text user "${REFERENCE}"
+		(at 0 0 0)
+		(layer "F.Fab")
+		(uuid "9dc27bd5-ccfa-492a-b13c-1c1fca7da333")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.254)
+			)
+		)
+	)
+	(pad "1" thru_hole rect
+		(at 0 0)
+		(size 1.05 1.05)
+		(drill 0.65)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "7ad2bc52-a57a-47ad-aad0-cf0bd3c66745")
+	)
+	(pad "2" thru_hole circle
+		(at -2.54 0)
+		(size 1.05 1.05)
+		(drill 0.65)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "ce2fcf87-bf2d-4f83-9ede-7cee7dee39f7")
+	)
+	(pad "3" thru_hole circle
+		(at -5.08 0)
+		(size 1.05 1.05)
+		(drill 0.65)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "c50e8bb0-feed-4809-99b0-bda21055fa3d")
+	)
+	(pad "4" thru_hole circle
+		(at -7.62 0)
+		(size 1.05 1.05)
+		(drill 0.65)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "8076c02f-934a-4de1-ab9b-ef5843abf1f5")
+	)
+	(model "C:/dev/About-Time/MHCI/common/3D/399-10-104-10-008000.stp"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
+)
