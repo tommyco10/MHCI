@@ -32,12 +32,12 @@ const uint16_t pwmFreqPersonality5 =  500; // PWM Frequency for Personality 5
 const uint16_t pwmFreqPersonality6 =   60; // PWM Frequency for Personality 6 
 
 // Pins
-const uint8_t builtInLedPin = 13;
+const uint8_t builtInLedPin = BUILTIN_LED;
 const uint8_t outputLedPin1 = 27; // Output pin for LED 1 (Sparkfun D2)
 const uint8_t outputLedPin2 = 19; // Output pin for LED 2 (Sparkfun D0)
-const uint8_t enablePin = 21;
-const uint8_t transmitPin = 17;
-const uint8_t receivePin = 16;
+const uint8_t enablePin = ENABLE_PIN;
+const uint8_t transmitPin = TRANSMIT_PIN;
+const uint8_t receivePin = RECEIVE_PIN;
 
 // DMX Configuration
 const dmx_port_t dmxPort = DMX_NUM_1;
