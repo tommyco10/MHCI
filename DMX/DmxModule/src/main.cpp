@@ -1,6 +1,6 @@
 //written using a clone of esp_dmx v4.1.0
 
-//#define DEBUG  // Uncomment this line to enable debugging messages
+#define DEBUG  // Uncomment this line to enable debugging messages
 
 #ifdef DEBUG
     #define DEBUG_PRINT(x)    Serial.print(x)
@@ -19,18 +19,18 @@
 
 #include "scurve.hpp"
 
-#include <WiFi.h>
-#include <WiFiClient.h>
-#include <WebServer.h>
-#include <ElegantOTA.h>
+//#include <WiFi.h>
+//#include <WiFiClient.h>
+//#include <WebServer.h>
+//#include <ElegantOTA.h>
 
-const char* ssid = "W-Streetlight-5-DMX";
-const char* password = "94499449";
-WebServer server(80);
-unsigned long ota_progress_millis = 0;
-IPAddress local_IP(192, 168, 1, 1);
-IPAddress gateway(192, 168, 1, 1);
-IPAddress subnet(255, 255, 0, 0);
+//const char* ssid = "W-Streetlight-5-DMX";
+//const char* password = "94499449";
+//WebServer server(80);
+//unsigned long ota_progress_millis = 0;
+//IPAddress local_IP(192, 168, 1, 1);
+//IPAddress gateway(192, 168, 1, 1);
+//IPAddress subnet(255, 255, 0, 0);
 
 // PWM Configuration
 const uint8_t pwmChannels[6] = {1, 2, 3, 4, 5, 6};
@@ -39,9 +39,9 @@ const uint8_t pwmResolution = 14; // PWM resolution of 14 bits
 const uint16_t pwmThreshold = 0;  // Low Value Threshold for PWM output
 
 // PWM frequencies for each personality
-const uint16_t pwmFreqPersonality[6] = {300, 500, 1000, 500, 500, 1000};
+const uint16_t pwmFreqPersonality[6] = {300, 500, 1000, 300, 500, 1000};
 
-const uint16_t lowThreshold[6] = {260, 500, 950, 260, 500, 950};
+const uint16_t lowThreshold[6] = {0, 0, 0, 0, 0, 0};
 uint16_t pwmOutput[6] = {0, 0, 0, 0, 0, 0};
 uint16_t pwmOutputOld[6] = {0, 0, 0, 0, 0, 0};
 
@@ -76,7 +76,7 @@ uint8_t currentPersonality;
 uint16_t pwmFreq;
 
 // RDM Identify mode
-bool identifyMode = false;
+//bool identifyMode = false;
 
 // Function to map DMX value to PWM value using an S-curve (sigmoid function)
 uint16_t computeSCurve(uint16_t input, float B, float x0, float k1, float s0, float s1) {
@@ -117,7 +117,7 @@ uint16_t scaleBrightness(uint16_t rawBrightness) {
     return scaledBrightness;
 }
 
-void onOTAStart() {
+/*void onOTAStart() {
     DEBUG_PRINTLN("OTA Update Started");
 }
 void onOTAProgress(size_t current, size_t final) {
@@ -165,13 +165,13 @@ void stopOTA() {
     WiFi.disconnect();
     WiFi.mode(WIFI_OFF);
 }
-
+*/
 void setup() {
     #ifdef DEBUG
     Serial.begin(115200);
     #endif
 
-    WiFi.mode(WIFI_OFF);
+   // WiFi.mode(WIFI_OFF);
 
     // Install the DMX driver
     dmx_config_t config = {
@@ -224,21 +224,21 @@ void loop() {
 
     // If identify mode then start the OTA server
 
-    if (identifyMode) {
+   /* if (identifyMode) {
         startOTA();
         server.handleClient();
         ElegantOTA.loop();
     } else {
         stopOTA();
     }
-
+*/
     if (dmx_receive(dmxPort, &packet, DMX_TIMEOUT_TICK)) {
 
         if (packet.is_rdm && !packet.err) {
             // Handle RDM packet
             rdm_send_response(dmxPort);
             DEBUG_PRINTLN("RDM packet received and response sent.");
-            rdm_get_identify_device(dmxPort, &identifyMode);
+            //rdm_get_identify_device(dmxPort, &identifyMode);
 
             // Indicate that the DMX address or personality may have changed
             dmxAddressChanged = true;
