@@ -1,283 +1,211 @@
-//written using a clone of esp_dmx v4.1.0
-
-#define DEBUG  // Uncomment this line to enable debugging messages
-
+/********************************************************************
+ * Board A – DMX / RDM front-end that also streams its brightness
+ *           to another ESP32 over I²C (SDA 23, SCL 22).
+ * Library versions: esp_dmx 4.1.0, Arduino-ESP32 2.0.14
+ ********************************************************************/
+#define DEBUG
 #ifdef DEBUG
-#define DEBUG_PRINT(x)    Serial.print(x)
-#define DEBUG_PRINTLN(x)  Serial.println(x)
-#define DEBUG_PRINTF(...) Serial.printf(__VA_ARGS__)
+  #define DEBUG_PRINT(x)    Serial.print(x)
+  #define DEBUG_PRINTLN(x)  Serial.println(x)
+  #define DEBUG_PRINTF(...) Serial.printf(__VA_ARGS__)
 #else
-#define DEBUG_PRINT(x)
-#define DEBUG_PRINTLN(x)
-#define DEBUG_PRINTF(...)
+  #define DEBUG_PRINT(x)
+  #define DEBUG_PRINTLN(x)
+  #define DEBUG_PRINTF(...)
 #endif
 
 #include <Arduino.h>
+#include <Wire.h>            // NEW
 #include <math.h>
 #include <esp_dmx.h>
 #include <rdm/responder.h>
 
-// PWM Configuration
-const uint8_t pwmChannel1 = 1;    // PWM Channel 1
-const uint8_t pwmChannel2 = 2;    // PWM Channel 2
-const uint8_t pwmResolution = 16; // PWM resolution of 16 bits
-const uint16_t pwmThreshold = 0;  // Low Value Threshold for PWM output
+/* ---------- I²C settings --------------------------------------- */
+constexpr uint8_t  I2C_SDA_PIN   = 23;
+constexpr uint8_t  I2C_SCL_PIN   = 22;
+constexpr uint8_t  SLAVE_ADDR    = 0x30;
+constexpr uint32_t I2C_FREQ_HZ   = 400000;   // fast mode
 
-// PWM frequencies for each personality
-const uint16_t pwmFreqPersonality1 = 1000; // PWM Frequency for Personality 1 
-const uint16_t pwmFreqPersonality2 =  500; // PWM Frequency for Personality 2
-const uint16_t pwmFreqPersonality3 =   60; // PWM Frequency for Personality 3 
-const uint16_t pwmFreqPersonality4 = 1000; // PWM Frequency for Personality 4 
-const uint16_t pwmFreqPersonality5 =  500; // PWM Frequency for Personality 5 
-const uint16_t pwmFreqPersonality6 =   60; // PWM Frequency for Personality 6 
+/* ---------- PWM configuration ---------------------------------- */
+const uint8_t  pwmChannel1   = 1;
+const uint8_t  pwmChannel2   = 2;
+const uint8_t  pwmResolution = 16;
+const uint16_t pwmThreshold  = 0;
 
-// Pins
+/* ---------- personality → PWM frequency table ------------------ */
+const uint16_t pwmFreqPersonality[] = {
+  0, 1000, 500,  60, 1000, 500,  60
+};
+/*            ^ dummy for index 0 */
+
+/* ---------- pins ------------------------------------------------ */
 const uint8_t builtInLedPin = BUILTIN_LED;
-const uint8_t outputLedPin1 = 27; // Output pin for LED 1 (Sparkfun D2)
-const uint8_t outputLedPin2 = 19; // Output pin for LED 2 (Sparkfun D0)
-const uint8_t enablePin = ENABLE_PIN;
-const uint8_t transmitPin = TRANSMIT_PIN;
-const uint8_t receivePin = RECEIVE_PIN;
+const uint8_t outputLedPin1 = 27;
+const uint8_t outputLedPin2 = 19;
+const uint8_t enablePin     = ENABLE_PIN;
+const uint8_t transmitPin   = TRANSMIT_PIN;
+const uint8_t receivePin    = RECEIVE_PIN;
 
-// DMX Configuration
+/* ---------- DMX ------------------------------------------------- */
 const dmx_port_t dmxPort = DMX_NUM_1;
+byte     dmxData[DMX_PACKET_SIZE];
 uint16_t dmxAddress;
-byte dmxData[DMX_PACKET_SIZE];
+bool     dmxIsConnected = false;
+bool     dmxAddressChanged = false;
 
-// DMX Connectivity and Timing
-bool dmxIsConnected = false;
-unsigned long lastUpdate = 0;
-bool dmxAddressChanged = false;
+/* ---------- S-curve parameters (unchanged) ---------------------- */
+const float midpointBrightness1 = 8441.0f, x0_1 = 32768.0f, k1_1 = 0.0002f;
+const float s0_1 = 1.0f / (1.0f + expf(k1_1 * x0_1)), s1_1 = 0.5f;
 
-// S-curve Parameters for Channel 1
-const float midpointBrightness1 = 8441.0f; // PWM output at DMX value x0_1 (midpoint brightness)
-const float x0_1 = 32768.0f;               // Midpoint of the DMX input range (65535 / 2)
-const float k1_1 = 0.0002f;                // Steepness for the lower S-curve
-const float s0_1 = 1.0f / (1.0f + expf(k1_1 * x0_1)); // Sigmoid at input = 0
-const float s1_1 = 0.5f;                                // Sigmoid at input = x0
+const float midpointBrightness2 = 8441.0f, x0_2 = 32768.0f, k1_2 = 0.0002f;
+const float s0_2 = 1.0f / (1.0f + expf(k1_2 * x0_2)), s1_2 = 0.5f;
 
-// S-curve Parameters for Channel 2
-const float midpointBrightness2 = 8441.0f; // PWM output at DMX value x0_2 (midpoint brightness)
-const float x0_2 = 32768.0f;               // Midpoint of the DMX input range (65535 / 2)
-const float k1_2 = 0.0002f;                // Steepness for the lower S-curve
-const float s0_2 = 1.0f / (1.0f + expf(k1_2 * x0_2)); // Sigmoid at input = 0
-const float s1_2 = 0.5f;                                // Sigmoid at input = x0
-
-// Variable to store the current personality
-uint8_t currentPersonality;
-
-// PWM frequency variable
+/* ---------- runtime state -------------------------------------- */
+uint8_t  currentPersonality;
 uint16_t pwmFreq;
+unsigned long lastUpdate = 0;
 
-// Function to map DMX value to PWM value using an S-curve (sigmoid function)
-uint16_t computeSCurve(uint16_t input, float B, float x0, float k1, float s0, float s1) {
-    if (input <= x0) {
-        // Lower S-curve
-        float s = 1.0f / (1.0f + expf(-k1 * (input - x0))); // Sigmoid at current input
-        float sNormalized = (s - s0) / (s1 - s0);           // Normalize s to [0, 1]
-        float output = B * sNormalized;                     // Scale output from 0 to B
-        return (uint16_t)output;
-    } else {
-        // Upper linear curve
-        float u = (input - x0) / (65535.0f - x0);           // Normalize input to [0, 1]
-        float output = B + (65535.0f - B) * u;              // Linear interpolation from B to 65535
-        return (uint16_t)output;
-    }
+/* ---------- helpers -------------------------------------------- */
+uint16_t computeSCurve(uint16_t in, float B, float x0, float k,
+                       float s0, float s1)
+{
+  if (in <= x0) {
+    float s = 1.0f / (1.0f + expf(-k * (in - x0)));
+    float sn = (s - s0) / (s1 - s0);
+    return uint16_t(B * sn);
+  } else {
+    float u = (in - x0) / (65535.0f - x0);
+    return uint16_t(B + (65535.0f - B) * u);
+  }
 }
 
-// Function to get PWM frequency based on personality
-uint16_t getPWMFrequencyForPersonality(uint8_t personality) {
-    switch(personality) {
-        case 1:
-            return pwmFreqPersonality1;
-        case 2:
-            return pwmFreqPersonality2;
-        case 3:
-            return pwmFreqPersonality3;
-        case 4:
-            return pwmFreqPersonality4;  
-        case 5:
-            return pwmFreqPersonality5;
-        case 6:
-            return pwmFreqPersonality6;          
-    }
+uint16_t getPWMFrequencyForPersonality(uint8_t p)
+{
+  if (p >= 1 && p <= 6) return pwmFreqPersonality[p];
+  return 1000;
 }
 
-void nukeDriver(){
-    dmx_driver_delete(dmxPort);
-    dmx_config_t config = {
-        .interrupt_flags = DMX_INTR_FLAGS_DEFAULT,
-        .root_device_parameter_count = 32,
-        .sub_device_parameter_count = 0,
-        .model_id = 1,
-        .product_category = RDM_PRODUCT_CATEGORY_FIXTURE,
-        .software_version_id = ESP_DMX_VERSION_ID,
-        .software_version_label = ESP_DMX_VERSION_LABEL,
-        .queue_size_max = 0, // default 32 but 0 is smoother dimming
-    };
-    dmx_personality_t personalities[] = {
-        {4, "16Bit sCurve 1000Hz          "},
-        {4, "16Bit sCurve 500Hz          "},
-        {4, "16Bit sCurve 60Hz          "},
-        {4, "16Bit Linear 1000Hz          "},
-        {4, "16Bit Linear 500Hz          "},
-        {4, "16Bit Linear 60Hz          "}
-    };
-    dmx_driver_install(dmxPort, &config, personalities, 6);
-    dmx_set_pin(dmxPort, transmitPin, receivePin, enablePin);
-            
-    // Get the initial DMX start address and personality
-    dmxAddress = dmx_get_start_address(dmxPort);
-    currentPersonality = dmx_get_current_personality(dmxPort);
-    }
+/* ---------- DMX driver helper ---------------------------------- */
+void reinstallDriver()
+{
+  dmx_driver_delete(dmxPort);
 
-void setup() {
-    #ifdef DEBUG
-    Serial.begin(921600);
-    #endif
+  dmx_config_t cfg = {
+      .interrupt_flags             = DMX_INTR_FLAGS_DEFAULT,
+      .root_device_parameter_count = 32,
+      .sub_device_parameter_count  = 0,
+      .model_id                    = 1,
+      .product_category            = RDM_PRODUCT_CATEGORY_FIXTURE,
+      .software_version_id         = ESP_DMX_VERSION_ID,
+      .software_version_label      = ESP_DMX_VERSION_LABEL,
+      .queue_size_max              = 32            // IDF-4 safe
+  };
+  static dmx_personality_t pers[] = {
+      {4, "16Bit sCurve 1000Hz"},  {4, "16Bit sCurve 500Hz"},
+      {4, "16Bit sCurve 60Hz"},    {4, "16Bit Linear 1000Hz"},
+      {4, "16Bit Linear 500Hz"},   {4, "16Bit Linear 60Hz"}
+  };
+  dmx_driver_install(dmxPort, &cfg, pers, 6);
+  dmx_set_pin(dmxPort, transmitPin, receivePin, enablePin);
 
-    // Install the DMX driver
-    dmx_config_t config = {
-        .interrupt_flags = DMX_INTR_FLAGS_DEFAULT,
-        .root_device_parameter_count = 32,
-        .sub_device_parameter_count = 0,
-        .model_id = 1,
-        .product_category = RDM_PRODUCT_CATEGORY_FIXTURE,
-        .software_version_id = ESP_DMX_VERSION_ID,
-        .software_version_label = ESP_DMX_VERSION_LABEL,
-        .queue_size_max = 0, // default 32 but 0 is smoother dimming
-    };
-    dmx_personality_t personalities[] = {
-        {4, "16Bit sCurve 1000Hz          "},
-        {4, "16Bit sCurve 500Hz          "},
-        {4, "16Bit sCurve 60Hz          "},
-        {4, "16Bit Linear 1000Hz          "},
-        {4, "16Bit Linear 500Hz          "},
-        {4, "16Bit Linear 60Hz          "}
-    };
-    dmx_driver_install(dmxPort, &config, personalities, 6);
-    dmx_set_pin(dmxPort, transmitPin, receivePin, enablePin);
-
-    // Get the initial DMX start address and personality
-    dmxAddress = dmx_get_start_address(dmxPort);
-    currentPersonality = dmx_get_current_personality(dmxPort);
-
-    // Set PWM frequency based on initial personality
-    pwmFreq = getPWMFrequencyForPersonality(currentPersonality);
-
-    // Set up the PWM channels for both LEDs
-    ledcSetup(pwmChannel1, pwmFreq, pwmResolution);
-    ledcAttachPin(outputLedPin1, pwmChannel1);
-    ledcAttachPin(builtInLedPin, pwmChannel1);
-
-    ledcSetup(pwmChannel2, pwmFreq, pwmResolution);
-    ledcAttachPin(outputLedPin2, pwmChannel2);
-
-    // Now we can read the actual PWM frequency
-    DEBUG_PRINTF("Initial DMX Start Address: %d\n", dmxAddress);
-    DEBUG_PRINTF("Initial Personality: %d\n", currentPersonality);
-    DEBUG_PRINTF("Initial PWM frequency: %d Hz\n", ledcReadFreq(pwmChannel1));
-
-    lastUpdate = millis();
+  dmxAddress        = dmx_get_start_address(dmxPort);
+  currentPersonality = dmx_get_current_personality(dmxPort);
+  pwmFreq           = getPWMFrequencyForPersonality(currentPersonality);
 }
 
-void loop() {
-    dmx_packet_t packet;
+/* ----------------------------------------------------------------*/
+void setup()
+{
+#ifdef DEBUG
+  Serial.begin(921600);
+#endif
+  reinstallDriver();
 
-    if (dmx_receive(dmxPort, &packet, DMX_TIMEOUT_TICK)) {
-        if (packet.is_rdm && !packet.err) {
-            // Handle RDM packet
-            rdm_send_response(dmxPort);
-            DEBUG_PRINTLN("RDM packet received and response sent.");
+  /* PWM initialisation */
+  ledcSetup(pwmChannel1, pwmFreq, pwmResolution);
+  ledcAttachPin(outputLedPin1, pwmChannel1);
+  ledcAttachPin(builtInLedPin, pwmChannel1);
 
-            // Indicate that the DMX address or personality may have changed
-            dmxAddressChanged = true;
-        } else if (!packet.err) {
-            // Handle DMX packet
-            if (!dmxIsConnected) {
-                DEBUG_PRINTLN("DMX is connected!");
-                dmxIsConnected = true;
-            }
+  ledcSetup(pwmChannel2, pwmFreq, pwmResolution);
+  ledcAttachPin(outputLedPin2, pwmChannel2);
 
-            // Update the DMX start address and personality if they have changed
-            if (dmxAddressChanged) {
-                uint16_t newDmxAddress = dmx_get_start_address(dmxPort);
-                if (newDmxAddress != dmxAddress) {
-                    dmxAddress = newDmxAddress;
-                    DEBUG_PRINTF("DMX Start Address updated to %d\n", dmxAddress);
-                }
+  /* I²C master */
+  Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN, I2C_FREQ_HZ);
+  Wire.setBufferSize(16);
 
-                uint8_t newPersonality = dmx_get_current_personality(dmxPort);
-                if (newPersonality != currentPersonality) {
-                    currentPersonality = newPersonality;
-                    DEBUG_PRINTF("Personality changed to %d\n", currentPersonality);
+  DEBUG_PRINTF("DMX addr %u, personality %u, PWM %u Hz\n",
+               dmxAddress, currentPersonality, pwmFreq);
+}
 
-                    // Get the new PWM frequency based on personality
-                    uint16_t newPwmFreq = getPWMFrequencyForPersonality(currentPersonality);
-                    pwmFreq = newPwmFreq;
-                    ledcSetup(pwmChannel1, pwmFreq, pwmResolution);
-                    ledcSetup(pwmChannel2, pwmFreq, pwmResolution);
+/* ----------------------------------------------------------------*/
+void loop()
+{
+  dmx_packet_t packet;
+  if (dmx_receive(dmxPort, &packet, DMX_TIMEOUT_TICK)) {
 
-                    // Use ledcReadFreq to display the updated PWM frequency
-                    DEBUG_PRINTF("PWM frequency set to %d Hz\n", ledcReadFreq(pwmChannel1));
-                }
+    if (packet.is_rdm && !packet.err) {           // ---- RDM
+      rdm_send_response(dmxPort);
+      dmxAddressChanged = true;
+    }
+    else if (!packet.err) {                       // ---- DMX
 
-                dmxAddressChanged = false;
-                nukeDriver();
-            }
+      if (!dmxIsConnected) { DEBUG_PRINTLN("DMX linked"); dmxIsConnected = true; }
 
-            dmx_read(dmxPort, dmxData, packet.size);
-
-            int index = dmxAddress;
-            if (index + 3 < DMX_PACKET_SIZE) {
-                // Read DMX values for Channel 1
-                uint16_t rawBrightness1 = ((uint16_t)dmxData[index] << 8) | dmxData[index + 1];
-                // Read DMX values for Channel 2
-                uint16_t rawBrightness2 = ((uint16_t)dmxData[index + 2] << 8) | dmxData[index + 3];
-
-                uint16_t scaledBrightness1 = 0;
-                uint16_t scaledBrightness2 = 0;
-
-                if (currentPersonality == 1 || currentPersonality == 2 || currentPersonality == 3) {
-                    // Apply S-curve
-                    scaledBrightness1 = computeSCurve(rawBrightness1, midpointBrightness1, x0_1, k1_1, s0_1, s1_1);
-                    scaledBrightness2 = computeSCurve(rawBrightness2, midpointBrightness2, x0_2, k1_2, s0_2, s1_2);
-                } else if (currentPersonality == 4 || currentPersonality == 5 || currentPersonality == 6) {
-                    // Use raw DMX values directly
-                    scaledBrightness1 = rawBrightness1;
-                    scaledBrightness2 = rawBrightness2;
-                }
-
-                // Apply low value threshold
-                if (scaledBrightness1 < pwmThreshold) {
-                    scaledBrightness1 = 0;
-                }
-                if (scaledBrightness2 < pwmThreshold) {
-                    scaledBrightness2 = 0;
-                }
-
-                // Write to PWM outputs
-                ledcWrite(pwmChannel1, scaledBrightness1);
-                ledcWrite(pwmChannel2, scaledBrightness2);
-
-                unsigned long now = millis();
-                if (now - lastUpdate > 750) {
-                    DEBUG_PRINTF("Startcode: %d, Address: %d\n", dmxData[0], dmxAddress);
-                    DEBUG_PRINTF("Personality: %d\n", currentPersonality);
-                    // Use ledcReadFreq to display the current PWM frequency
-                    DEBUG_PRINTF("PWM Frequency: %d Hz\n", ledcReadFreq(pwmChannel1));
-                    DEBUG_PRINTF("Channel 1 - DMX: %d, PWM: %d\n", rawBrightness1, scaledBrightness1);
-                    DEBUG_PRINTF("Channel 2 - DMX: %d, PWM: %d\n", rawBrightness2, scaledBrightness2);
-                    lastUpdate = now;
-                }
-            } else {
-                DEBUG_PRINTLN("DMX Address out of range.");
-            }
-        } else {
-            DEBUG_PRINTLN("A DMX error occurred.");
+      if (dmxAddressChanged) {                    // re-read addr / personality
+        dmxAddress = dmx_get_start_address(dmxPort);
+        uint8_t newPers = dmx_get_current_personality(dmxPort);
+        if (newPers != currentPersonality) {
+          currentPersonality = newPers;
+          pwmFreq = getPWMFrequencyForPersonality(currentPersonality);
+          ledcSetup(pwmChannel1, pwmFreq, pwmResolution);
+          ledcSetup(pwmChannel2, pwmFreq, pwmResolution);
         }
-    } else if (dmxIsConnected) {
-        DEBUG_PRINTLN("DMX was disconnected.");
-        dmxIsConnected = false;
+        dmxAddressChanged = false;
+      }
+
+      dmx_read(dmxPort, dmxData, packet.size);
+
+      int idx = dmxAddress;
+      if (idx + 3 < DMX_PACKET_SIZE) {
+
+        /* ----- DMX → PWM mapping -------------------------------- */
+        uint16_t raw1 = (dmxData[idx]   << 8) | dmxData[idx+1];
+        uint16_t raw2 = (dmxData[idx+2] << 8) | dmxData[idx+3];
+
+        uint16_t pwm1, pwm2;
+        if (currentPersonality <= 3) {
+          pwm1 = computeSCurve(raw1, midpointBrightness1, x0_1, k1_1, s0_1, s1_1);
+          pwm2 = computeSCurve(raw2, midpointBrightness2, x0_2, k1_2, s0_2, s1_2);
+        } else {
+          pwm1 = raw1;
+          pwm2 = raw2;
+        }
+        if (pwm1 < pwmThreshold) pwm1 = 0;
+        if (pwm2 < pwmThreshold) pwm2 = 0;
+
+        ledcWrite(pwmChannel1, pwm1);
+        ledcWrite(pwmChannel2, pwm2);
+
+        /* ----- send 3-byte I²C packet --------------------------- */
+        uint8_t pkt[3] = { currentPersonality,
+                           uint8_t(pwm1 >> 8), uint8_t(pwm1 & 0xFF) };
+        Wire.beginTransmission(SLAVE_ADDR);
+        Wire.write(pkt, sizeof(pkt));
+        Wire.endTransmission();
+
+        /* ----- optional debug every 750 ms ---------------------- */
+        unsigned long now = millis();
+        if (now - lastUpdate > 750) {
+          DEBUG_PRINTF("Pers %u  PWMfreq %u Hz  Ch1 %u→%u  Ch2 %u→%u\n",
+                       currentPersonality, pwmFreq, raw1, pwm1, raw2, pwm2);
+          lastUpdate = now;
+        }
+      }
+
     }
+  }
+  else if (dmxIsConnected) {
+    DEBUG_PRINTLN("DMX lost");
+    dmxIsConnected = false;
+  }
 }
