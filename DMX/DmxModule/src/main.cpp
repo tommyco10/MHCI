@@ -1,88 +1,70 @@
-/********************************************************************
- * Board B – receives 3 bytes over I²C and sets its BUILTIN_LED
- *           to the same 16-bit PWM value coming from Board A.
- ********************************************************************/
-#define DEBUG
-#ifdef DEBUG
-  #define DBG(x)    Serial.print(x)
-  #define DBGLN(x)  Serial.println(x)
-  #define DBGF(...) Serial.printf(__VA_ARGS__)
-#else
-  #define DBG(x)
-  #define DBGLN(x)
-  #define DBGF(...)
-#endif
-
+/*****************************************************************
+ *  I²C DMX receiver                                             *
+ *  - Listens at addr 0x30                                       *
+ *  - Rebuilds 512-byte universe                                 *
+ *  - Mirrors DMX channel 1 (two bytes) on its built-in LED      *
+ *****************************************************************/
 #include <Arduino.h>
 #include <Wire.h>
 
-/* I²C parameters (must match Board A) */
-constexpr uint8_t  SDA_PIN   = 23;
-constexpr uint8_t  SCL_PIN   = 22;
-constexpr uint8_t  I2C_ADDR  = 0x30;
-constexpr uint32_t I2C_FREQ  = 400000;
+#define BAUD            921600
+#define I2C_ADDR        0x30
+#define SDA_PIN         23
+#define SCL_PIN         22
+#define I2C_CLOCK_HZ    400000UL
+#define CHUNK_LEN       128                 // must match sender
+#define DMX_UNIVERSE    512
 
-/* PWM parameters */
-const uint8_t  PWM_CH   = 1;
-const uint8_t  PWM_BITS = 16;
-const uint16_t pwmFreqPers[] = { 0, 1000, 500, 60, 1000, 500, 60 };
+byte dmx[DMX_UNIVERSE];
+volatile int  nextOffset  = 0;              // where the next bytes go
+volatile bool frameReady  = false;
 
-/* state */
-volatile uint8_t  rxBuf[3] = {1, 0, 0};
-volatile bool     frameReady = false;
-
-/* I²C receive ISR */
-void IRAM_ATTR onReceive(int len)
+void IRAM_ATTR onReceive(int nBytes)
 {
-  if (len == 3) {
-    for (int i = 0; i < 3; ++i) rxBuf[i] = Wire.read();
+  // copy straight into the universe buffer
+  for (int i = 0; i < nBytes && nextOffset < DMX_UNIVERSE; ++i)
+    dmx[nextOffset++] = Wire.read();
+
+  // full universe received?
+  if (nextOffset >= DMX_UNIVERSE) {
     frameReady = true;
-  } else while (Wire.available()) Wire.read();
-}
-
-void applyPersonality(uint8_t p)
-{
-  if (p < 1 || p > 6) return;
-  ledcSetup(PWM_CH, pwmFreqPers[p], PWM_BITS);
-  DBGF("Personality %u → %u Hz\n", p, pwmFreqPers[p]);
+    nextOffset = 0;                         // start over for next frame
+  }
 }
 
 void setup()
 {
-#ifdef DEBUG
-  Serial.begin(921600);
-#endif
-  applyPersonality(1);
-  ledcAttachPin(BUILTIN_LED, PWM_CH);
+  Serial.begin(BAUD);
+  delay(50);
+  Serial.println("\n\n=== I2C DMX receiver ===");
 
-  Wire.setBufferSize(16);
-  Wire.begin(I2C_ADDR, SDA_PIN, SCL_PIN, I2C_FREQ);
+  pinMode(LED_BUILTIN, OUTPUT);
+  ledcSetup(0, 1000, 16);                   // channel 0, 16-bit PWM
+  ledcAttachPin(LED_BUILTIN, 0);
+
+  Wire.begin(SDA_PIN, SCL_PIN, I2C_CLOCK_HZ);
+  Wire.setClock(I2C_CLOCK_HZ);
   Wire.onReceive(onReceive);
-
-  DBGLN("Slave ready.");
+  Wire.begin(I2C_ADDR);
+  Serial.printf("Listening on 0x%02X  @%lu Hz\n", I2C_ADDR, I2C_CLOCK_HZ);
 }
 
 void loop()
 {
-  if (!frameReady) { delay(1); return; }
-  frameReady = false;
+  static uint32_t t0 = 0;
 
-  uint8_t  pers  = rxBuf[0];
-  uint16_t pwm16 = (rxBuf[1] << 8) | rxBuf[2];
+  if (frameReady) {
+    frameReady = false;
 
-  static uint8_t persPrev = 1;
-  if (pers != persPrev && pers >= 1 && pers <= 6) {
-    applyPersonality(pers);
-    persPrev = pers;
+    uint16_t value = ((uint16_t)dmx[0] << 8) | dmx[1];  // DMX address 1
+    ledcWrite(0, value);                                // 16-bit PWM
+
+    Serial.printf("CH1 DMX %u → PWM %u\n", value, value);
   }
 
-  ledcWrite(PWM_CH, pwm16);
-
-#ifdef DEBUG
-  static unsigned long t0 = 0;
-  if (millis() - t0 > 750) {
-    DBGF("Pers %u  PWM %u\n", pers, pwm16);
+  // heartbeat every second
+  if (millis() - t0 > 1000) {
     t0 = millis();
+    Serial.printf("ISR offs %d  frameReady %d\n", nextOffset, frameReady);
   }
-#endif
 }
