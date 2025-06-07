@@ -1,70 +1,110 @@
-/*****************************************************************
- *  I²C DMX receiver                                             *
- *  - Listens at addr 0x30                                       *
- *  - Rebuilds 512-byte universe                                 *
- *  - Mirrors DMX channel 1 (two bytes) on its built-in LED      *
- *****************************************************************/
+/***********************************************************************
+ *  I²C-DMX RECEIVER  (ESP32, Arduino core 2.x)
+ *  – Listens as I²C slave at 0x28 on SDA-23 / SCL-22
+ *  – Collects 513-byte frames pushed by the master (see previous code)
+ *  – Uses ESP-IDF I²C driver (DMA kicks in automatically for >32 B)
+ ***********************************************************************/
+
+#define DEBUG                       // comment-out to disable Serial prints
+
+/* -------- I²C settings (match the sender!) ------------------------- */
+#define I2C_SDA_PIN        23
+#define I2C_SCL_PIN        22
+#define I2C_PORT           I2C_NUM_0
+#define I2C_SLAVE_ADDR     0x28        // 7-bit
+#define I2C_BUFFER_BYTES   1024        // RX/TX DMA buffers
+
+/* -------- DMX universe size --------------------------------------- */
+#define DMX_SLOTS          512
+#define FRAME_BYTES        (DMX_SLOTS + 1)   // + start-code
+
+/* -------- convenience macros -------------------------------------- */
+#ifdef DEBUG
+#  define DEBUG_PRINT(x)    Serial.print(x)
+#  define DEBUG_PRINTLN(x)  Serial.println(x)
+#  define DEBUG_PRINTF(...) Serial.printf(__VA_ARGS__)
+#else
+#  define DEBUG_PRINT(x)
+#  define DEBUG_PRINTLN(x)
+#  define DEBUG_PRINTF(...)
+#endif
+
 #include <Arduino.h>
-#include <Wire.h>
+#include <driver/i2c.h>
 
-#define BAUD            921600
-#define I2C_ADDR        0x30
-#define SDA_PIN         23
-#define SCL_PIN         22
-#define I2C_CLOCK_HZ    400000UL
-#define CHUNK_LEN       128                 // must match sender
-#define DMX_UNIVERSE    512
+/* ---------- global data ------------------------------------------- */
+static uint8_t  dmxUniverse[FRAME_BYTES] = {0};   // latest frame
+static uint32_t frameCounter  = 0;                // how many frames received
+static uint8_t  ledState      = LOW;
 
-byte dmx[DMX_UNIVERSE];
-volatile int  nextOffset  = 0;              // where the next bytes go
-volatile bool frameReady  = false;
-
-void IRAM_ATTR onReceive(int nBytes)
-{
-  // copy straight into the universe buffer
-  for (int i = 0; i < nBytes && nextOffset < DMX_UNIVERSE; ++i)
-    dmx[nextOffset++] = Wire.read();
-
-  // full universe received?
-  if (nextOffset >= DMX_UNIVERSE) {
-    frameReady = true;
-    nextOffset = 0;                         // start over for next frame
-  }
-}
-
+/* ------------------------------------------------------------------ */
 void setup()
 {
-  Serial.begin(BAUD);
-  delay(50);
-  Serial.println("\n\n=== I2C DMX receiver ===");
+#ifdef DEBUG
+    Serial.begin(921600);
+    delay(100);
+    DEBUG_PRINTLN("\nI²C-DMX receiver booting…");
+#endif
 
-  pinMode(LED_BUILTIN, OUTPUT);
-  ledcSetup(0, 1000, 16);                   // channel 0, 16-bit PWM
-  ledcAttachPin(LED_BUILTIN, 0);
+    /* ---- configure I²C peripheral in SLAVE mode ------------------ */
+    i2c_config_t cfg = {};
+    cfg.mode             = I2C_MODE_SLAVE;
+    cfg.sda_io_num       = I2C_SDA_PIN;
+    cfg.scl_io_num       = I2C_SCL_PIN;
+    cfg.sda_pullup_en    = GPIO_PULLUP_ENABLE;
+    cfg.scl_pullup_en    = GPIO_PULLUP_ENABLE;
+    cfg.slave.addr_10bit_en = false;
+    cfg.slave.slave_addr    = I2C_SLAVE_ADDR;
+    i2c_param_config(I2C_PORT, &cfg);
 
-  Wire.begin(SDA_PIN, SCL_PIN, I2C_CLOCK_HZ);
-  Wire.setClock(I2C_CLOCK_HZ);
-  Wire.onReceive(onReceive);
-  Wire.begin(I2C_ADDR);
-  Serial.printf("Listening on 0x%02X  @%lu Hz\n", I2C_ADDR, I2C_CLOCK_HZ);
+    /*  The ESP-IDF driver allocates two DMA-capable circular buffers:
+     *  one for RX, one for TX.  Each must be ≥ the largest transfer
+     *  you expect.  1 kB is fine for a 513-byte frame. */
+    esp_err_t err = i2c_driver_install(I2C_PORT, I2C_MODE_SLAVE,
+                                       I2C_BUFFER_BYTES, I2C_BUFFER_BYTES, 0);
+    if (err != ESP_OK) {
+        DEBUG_PRINTF("I2C install failed: 0x%X\n", err);
+        while (true) { delay(1000); }
+    }
+
+    pinMode(LED_BUILTIN, OUTPUT);
+    DEBUG_PRINTLN("Ready – waiting for DMX frames over I²C.");
 }
 
+/* ------------------------------------------------------------------ */
 void loop()
 {
-  static uint32_t t0 = 0;
+    /*  Wait (blocking) until the master has written an entire frame.
+     *  We use a timeout so we can blink the LED if nothing arrives. */
+    int bytesRead = i2c_slave_read_buffer(I2C_PORT,
+                                          dmxUniverse, FRAME_BYTES,
+                                          pdMS_TO_TICKS(50));  // 50 ms
 
-  if (frameReady) {
-    frameReady = false;
+    if (bytesRead == FRAME_BYTES)
+    {
+        /* ---------- got a complete universe! ---------------------- */
+        frameCounter++;
 
-    uint16_t value = ((uint16_t)dmx[0] << 8) | dmx[1];  // DMX address 1
-    ledcWrite(0, value);                                // 16-bit PWM
+#ifdef DEBUG
+        /* Show first four channels just to prove it works */
+        uint16_t ch1 = (dmxUniverse[1] << 8) | dmxUniverse[2];
+        uint16_t ch2 = (dmxUniverse[3] << 8) | dmxUniverse[4];
+        DEBUG_PRINTF("Frame %lu  SC:%u  Ch1:%u  Ch2:%u\n",
+                     frameCounter, dmxUniverse[0], ch1, ch2);
+#endif
+        /* quick blink */
+        digitalWrite(LED_BUILTIN, HIGH);
+        delayMicroseconds(100);
+        digitalWrite(LED_BUILTIN, LOW);
+    }
+    else if (bytesRead > 0)   /* partial frame – flush it */
+    {
+        /* drain remaining bytes so we realign on next frame */
+        uint8_t dummy[FRAME_BYTES];
+        while (i2c_slave_read_buffer(I2C_PORT, dummy,
+                                     FRAME_BYTES, 0) > 0) { /* discard */ }
+        DEBUG_PRINTLN("⚠︎ partial frame discarded");
+    }
 
-    Serial.printf("CH1 DMX %u → PWM %u\n", value, value);
-  }
-
-  // heartbeat every second
-  if (millis() - t0 > 1000) {
-    t0 = millis();
-    Serial.printf("ISR offs %d  frameReady %d\n", nextOffset, frameReady);
-  }
+    /* Nothing arrived?  Do other background work here if you need it */
 }
