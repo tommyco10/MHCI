@@ -1,9 +1,13 @@
 /***********************************************************************
- *  I²C-DMX   RECEIVER   —   LED LEVEL FROM DMX Ch-1 & Ch-2 (16 bit)
- *  Board tested: Adafruit Feather ESP32 (built-in LED on GPIO 13)
+ *  I²C-DMX   RECEIVER — dumps the whole DMX universe to Serial
+ *  Board: Adafruit Feather ESP32  (built-in LED on GPIO 13)
  ***********************************************************************/
 
-#define DEBUG                             // comment to silence prints
+#define DEBUG                       // comment to silence info prints
+#define PRINT_UNIVERSE              // comment to disable slot dump
+
+/* -------- how often to dump the universe -------------------------- */
+#define DUMP_INTERVAL_MS  1000      // every 1 s
 
 #include <Arduino.h>
 #include <driver/i2c.h>
@@ -19,13 +23,13 @@
 
 /* -------- DMX frame ----------------------------------------------- */
 #define SLOTS           512
-#define FRAME_BYTES     (SLOTS + 1)       // start-code + data bytes
+#define FRAME_BYTES     (SLOTS + 1)   // start-code + data bytes
 
 /* -------- LED PWM -------------------------------------------------- */
-#define LED_PIN         LED_BUILTIN       // Feather: GPIO 13
+#define LED_PIN         LED_BUILTIN
 #define LED_PWM_CH      0
-#define LED_PWM_HZ      1000              // 1 kHz, 16-bit
-#define LED_ACTIVE_LOW  false             // <-- LED is active-HIGH here
+#define LED_PWM_HZ      1000          // 1 kHz, 16-bit
+#define LED_ACTIVE_LOW  false         // change if your LED is wired LOW-active
 
 /* -------- debug macros -------------------------------------------- */
 #ifdef DEBUG
@@ -41,7 +45,22 @@
 /* -------- frame buffer -------------------------------------------- */
 static uint8_t  dmx[FRAME_BYTES] = {0};
 static uint32_t frameCnt = 0;
+static uint32_t lastDump  = 0;
 
+/* ------------------------------------------------------------------ */
+#if defined(PRINT_UNIVERSE) && defined(DEBUG)
+void dumpUniverse()
+{
+  DBGF("\n--- DMX frame #%lu ---\nStart-code: %3u\n", frameCnt, dmx[0]);
+
+  for (uint16_t i = 1; i <= SLOTS; i++)
+  {
+    DBGF("%3u ", dmx[i]);              // decimal, 0-255
+    if (i % 16 == 0) DBGLN("");        // newline every 16 slots
+  }
+  DBGLN("\n--- end of frame ---\n");
+}
+#endif
 /* ================================================================== */
 void setup()
 {
@@ -52,13 +71,10 @@ void setup()
 #endif
 
   /* ---------- LED PWM set-up -------------------------------------- */
-  pinMode(LED_PIN, OUTPUT);                 // needed for ledcAttachPin
-  ledcSetup(LED_PWM_CH, LED_PWM_HZ, 16);    // 16-bit resolution
+  pinMode(LED_PIN, OUTPUT);
+  ledcSetup(LED_PWM_CH, LED_PWM_HZ, 16);
   ledcAttachPin(LED_PIN, LED_PWM_CH);
-
-  /* default: LED off */
-  uint16_t duty = LED_ACTIVE_LOW ? 0xFFFF : 0;
-  ledcWrite(LED_PWM_CH, duty);
+  ledcWrite(LED_PWM_CH, LED_ACTIVE_LOW ? 0xFFFF : 0);   // LED off
 
   /* ---------- I²C slave ------------------------------------------- */
   i2c_config_t cfg = {};
@@ -84,31 +100,33 @@ void loop()
   int n = i2c_slave_read_buffer(I2C_PORT, dmx, FRAME_BYTES,
                                 pdMS_TO_TICKS(50));
 
-  if (n == FRAME_BYTES)           /* ------------ full frame -------- */
+  if (n == FRAME_BYTES)                           // got full frame
   {
     frameCnt++;
 
-    /* 16-bit level from Ch 1 (hi byte) & Ch 2 (lo byte) */
+    /* LED brightness from first two slots (16-bit) */
     uint16_t level = (static_cast<uint16_t>(dmx[1]) << 8) | dmx[2];
-
-    /* map to PWM duty – account for active-low / active-high LED */
-    uint16_t duty = LED_ACTIVE_LOW ? (0xFFFF - level) : level;
+    uint16_t duty  = LED_ACTIVE_LOW ? (0xFFFF - level) : level;
     ledcWrite(LED_PWM_CH, duty);
 
 #ifdef DEBUG
-    static uint32_t lastPrint = 0;
-    if (millis() - lastPrint > 500) {       // print twice a second
-      DBGF("Frame %lu   Level:%5u   PWM duty:%5u\n",
+    /* dump entire universe every DUMP_INTERVAL_MS */
+    uint32_t now = millis();
+    if (now - lastDump >= DUMP_INTERVAL_MS) {
+  #if defined(PRINT_UNIVERSE)
+      dumpUniverse();
+  #else
+      DBGF("Frame %lu  Ch1-2 level: %u  PWM duty: %u\n",
            frameCnt, level, duty);
-      lastPrint = millis();
+  #endif
+      lastDump = now;
     }
 #endif
   }
-  else if (n > 0)                 /* --------- partial junk --------- */
+  else if (n > 0)                                 // partial junk
   {
-    /* flush any remaining bytes */
-    uint8_t dump[FRAME_BYTES];
-    while (i2c_slave_read_buffer(I2C_PORT, dump, FRAME_BYTES, 0) > 0) {}
+    uint8_t dumpBuf[FRAME_BYTES];
+    while (i2c_slave_read_buffer(I2C_PORT, dumpBuf, FRAME_BYTES, 0) > 0) {}
     DBGLN("⚠︎ partial frame discarded");
   }
 
